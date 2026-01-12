@@ -125,19 +125,25 @@ class SportsArbitrageEngine:
                 }
             else:
                 # Format for value edge opportunities
+                # For value edge, we're betting the SAME TEAM on both platforms
+                # but one platform has better odds
+                
+                # Determine which team from cb_teams matches for value edge
+                team_for_value = opp['team']  # This is the team with the value edge
+                
                 formatted = {
                     'market_name': opp['market_name'],
-                    'outcome_name': f"{opp['team']} (Value Edge)",
+                    'outcome_name': f"{team_for_value} (Value Edge)",
                     'platform_a': opp['platform_a'],
                     'platform_b': opp['platform_b'],
                     'market_a': opp['market_a'],
                     'market_b': opp['market_b'],
                     'outcome_a': {
-                        'name': opp['team'],
+                        'name': team_for_value,  # Same team on both platforms
                         'odds': opp['pm_odds']
                     },
                     'outcome_b': {
-                        'name': opp['team'],
+                        'name': team_for_value,  # Same team (correct for value edge)
                         'odds': opp['cb_odds']
                     },
                     'odds_a': opp['pm_odds'],

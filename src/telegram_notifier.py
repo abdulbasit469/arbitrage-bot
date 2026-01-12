@@ -54,18 +54,19 @@ class TelegramNotifier:
     
     def _format_alert_message(self, opportunity: Dict) -> str:
         """
-        Format arbitrage opportunity as Telegram message.
+        Format arbitrage/value edge opportunity as Telegram message.
         
-        Format matches the required specification:
-        - ARBITRAGE Found header with profit %
-        - Market name
-        - Platform A bet (team/outcome + odds + amount + link)
-        - Platform B bet (OPPOSITE team/outcome + odds + amount + link)
-        - Total investment
-        - Guaranteed profit
+        Two types:
+        1. ARBITRAGE: Opposite outcomes on different platforms
+           - Polymarket: Team A @ odds1
+           - Cloudbet: Team B @ odds2 (OPPOSITE)
+        
+        2. VALUE EDGE: Same outcome but better odds on one platform
+           - Polymarket: Team @ odds1
+           - Cloudbet: Team @ odds2 (better odds)
         
         Args:
-            opportunity: Arbitrage opportunity dictionary
+            opportunity: Opportunity dictionary
         
         Returns:
             Formatted message string with Markdown formatting
@@ -76,7 +77,7 @@ class TelegramNotifier:
         platform_a = opportunity.get('platform_a', 'Platform A')
         platform_b = opportunity.get('platform_b', 'Platform B')
         
-        # Get outcome names for display - these should be OPPOSITE outcomes for arbitrage
+        # Get outcome names for display
         outcome_a = opportunity.get('outcome_a', {}).get('name', 'YES')
         outcome_b = opportunity.get('outcome_b', {}).get('name', 'NO')
         
@@ -87,6 +88,8 @@ class TelegramNotifier:
         bet_amount_b = opportunity.get('bet_amount_b', 0)
         total_capital = opportunity.get('total_capital', 0)
         guaranteed_profit = opportunity.get('guaranteed_profit', 0)
+        edge_pct = opportunity.get('edge_percentage', 0)
+        better_platform = opportunity.get('better_platform', '')
         
         url_a = opportunity.get('market_a', {}).get('url', 'N/A')
         url_b = opportunity.get('market_b', {}).get('url', 'N/A')
@@ -95,11 +98,12 @@ class TelegramNotifier:
         platform_a_display = platform_a.capitalize()
         platform_b_display = platform_b.capitalize()
         
-        # Build message with better formatting for arbitrage
+        # Build message based on opportunity type
         opportunity_type = opportunity.get('type', 'arbitrage')
         
         if opportunity_type == 'arbitrage':
-            # For arbitrage, emphasize the OPPOSITE outcomes
+            # ARBITRAGE: Opposite outcomes
+            # outcome_a and outcome_b are different teams
             message = f"""*ARBITRAGE FOUND ({profit_pct:.2f}%)*
 
 *Market:* {market_name}
@@ -116,21 +120,28 @@ Stake: ${bet_amount_b:.2f}
 
 *Total Stake:* ${total_capital:.2f}
 *Guaranteed Profit:* ${guaranteed_profit:.2f}"""
+        
         else:
-            # Value edge message
+            # VALUE EDGE: Same outcome, different odds
+            # outcome_a and outcome_b are the SAME TEAM
+            better_emoji = "✓" if better_platform == platform_a else ""
+            worse_emoji = "✓" if better_platform == platform_b else ""
+            
             message = f"""*VALUE EDGE FOUND ({profit_pct:.2f}%)*
 
 *Market:* {market_name}
+*Team:* {outcome_a}
 
-*{platform_a_display}:*
+*{platform_a_display}:* {better_emoji if better_platform == platform_a else ""}
 {outcome_a} @ {odds_a:.2f}
 {url_a}
 
-*{platform_b_display}:*
+*{platform_b_display}:* {better_emoji if better_platform == platform_b else ""}
 {outcome_b} @ {odds_b:.2f}
 {url_b}
 
-*Difference:* ${abs(bet_amount_a - bet_amount_b):.2f}"""
+*Better Odds:* {better_platform.capitalize()}
+*Edge:* {edge_pct:.2f}%"""
         
         return message
     

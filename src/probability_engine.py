@@ -293,6 +293,7 @@ class ProbabilityEngine:
             total_prob_team2 = pm_prob_team2 + cb_prob_team1
             
             # Use the better arbitrage opportunity
+            arbitrage_found = False
             if total_prob_team1 < total_prob_team2:
                 total_prob = total_prob_team1
                 arb_team = team1
@@ -311,6 +312,7 @@ class ProbabilityEngine:
                 profit_pct = ((1.0 - total_prob) / total_prob) * 100
                 
                 if profit_pct >= self.min_arbitrage_profit:
+                    arbitrage_found = True
                     opportunity = {
                         'market_name': pm_title,
                         'event_name': cb_event_name,
@@ -339,67 +341,70 @@ class ProbabilityEngine:
                         f"Profit: {profit_pct:.2f}%"
                     )
             
-            # Also check for value edges (one platform has better odds)
-            # Value edge: PM says 60% chance, CB says 50% chance = 10% edge
-            edge_team1 = pm_prob_team1 - cb_prob_team1
-            edge_team2 = pm_prob_team2 - cb_prob_team2
-            
-            # Check if there's a significant edge
-            if abs(edge_team1) >= self.min_value_edge:
-                opportunity = {
-                    'market_name': pm_title,
-                    'event_name': cb_event_name,
-                    'type': 'value_edge',
-                    'platform_a': 'polymarket',
-                    'platform_b': 'cloudbet',
-                    'team': team1,
-                    'edge_percentage': edge_team1 * 100,
-                    'pm_probability': pm_prob_team1,
-                    'cb_probability': cb_prob_team1,
-                    'pm_odds': self._probability_to_odds(pm_prob_team1),
-                    'cb_odds': self._probability_to_odds(cb_prob_team1),
-                    'better_platform': 'polymarket' if edge_team1 > 0 else 'cloudbet',
-                    'market_a': match['market_a'],
-                    'market_b': match['market_b'],
-                    'sport_key': match.get('sport', 'unknown'),
-                    'start_time': match.get('cb_time')
-                }
+            # Only check for value edges if NO arbitrage was found
+            # This prioritizes arbitrage over value edges
+            if not arbitrage_found:
+                # Also check for value edges (one platform has better odds)
+                # Value edge: PM says 60% chance, CB says 50% chance = 10% edge
+                edge_team1 = pm_prob_team1 - cb_prob_team1
+                edge_team2 = pm_prob_team2 - cb_prob_team2
                 
-                opportunities.append(opportunity)
+                # Check if there's a significant edge
+                if abs(edge_team1) >= self.min_value_edge:
+                    opportunity = {
+                        'market_name': pm_title,
+                        'event_name': cb_event_name,
+                        'type': 'value_edge',
+                        'platform_a': 'polymarket',
+                        'platform_b': 'cloudbet',
+                        'team': team1,
+                        'edge_percentage': edge_team1 * 100,
+                        'pm_probability': pm_prob_team1,
+                        'cb_probability': cb_prob_team1,
+                        'pm_odds': self._probability_to_odds(pm_prob_team1),
+                        'cb_odds': self._probability_to_odds(cb_prob_team1),
+                        'better_platform': 'polymarket' if edge_team1 > 0 else 'cloudbet',
+                        'market_a': match['market_a'],
+                        'market_b': match['market_b'],
+                        'sport_key': match.get('sport', 'unknown'),
+                        'start_time': match.get('cb_time')
+                    }
+                    
+                    opportunities.append(opportunity)
+                    
+                    self.logger.info(
+                        f"VALUE EDGE: {pm_title} - {team1} - "
+                        f"PM: {pm_prob_team1:.2%} vs CB: {cb_prob_team1:.2%} - "
+                        f"Edge: {edge_team1*100:.2f}%"
+                    )
                 
-                self.logger.info(
-                    f"VALUE EDGE: {pm_title} - {team1} - "
-                    f"PM: {pm_prob_team1:.2%} vs CB: {cb_prob_team1:.2%} - "
-                    f"Edge: {edge_team1*100:.2f}%"
-                )
-            
-            if abs(edge_team2) >= self.min_value_edge:
-                opportunity = {
-                    'market_name': pm_title,
-                    'event_name': cb_event_name,
-                    'type': 'value_edge',
-                    'platform_a': 'polymarket',
-                    'platform_b': 'cloudbet',
-                    'team': team2,
-                    'edge_percentage': edge_team2 * 100,
-                    'pm_probability': pm_prob_team2,
-                    'cb_probability': cb_prob_team2,
-                    'pm_odds': self._probability_to_odds(pm_prob_team2),
-                    'cb_odds': self._probability_to_odds(cb_prob_team2),
-                    'better_platform': 'polymarket' if edge_team2 > 0 else 'cloudbet',
-                    'market_a': match['market_a'],
-                    'market_b': match['market_b'],
-                    'sport_key': match.get('sport', 'unknown'),
-                    'start_time': match.get('cb_time')
-                }
-                
-                opportunities.append(opportunity)
-                
-                self.logger.info(
-                    f"VALUE EDGE: {pm_title} - {team2} - "
-                    f"PM: {pm_prob_team2:.2%} vs CB: {cb_prob_team2:.2%} - "
-                    f"Edge: {edge_team2*100:.2f}%"
-                )
+                if abs(edge_team2) >= self.min_value_edge:
+                    opportunity = {
+                        'market_name': pm_title,
+                        'event_name': cb_event_name,
+                        'type': 'value_edge',
+                        'platform_a': 'polymarket',
+                        'platform_b': 'cloudbet',
+                        'team': team2,
+                        'edge_percentage': edge_team2 * 100,
+                        'pm_probability': pm_prob_team2,
+                        'cb_probability': cb_prob_team2,
+                        'pm_odds': self._probability_to_odds(pm_prob_team2),
+                        'cb_odds': self._probability_to_odds(cb_prob_team2),
+                        'better_platform': 'polymarket' if edge_team2 > 0 else 'cloudbet',
+                        'market_a': match['market_a'],
+                        'market_b': match['market_b'],
+                        'sport_key': match.get('sport', 'unknown'),
+                        'start_time': match.get('cb_time')
+                    }
+                    
+                    opportunities.append(opportunity)
+                    
+                    self.logger.info(
+                        f"VALUE EDGE: {pm_title} - {team2} - "
+                        f"PM: {pm_prob_team2:.2%} vs CB: {cb_prob_team2:.2%} - "
+                        f"Edge: {edge_team2*100:.2f}%"
+                    )
         
         arbitrage_count = sum(1 for o in opportunities if o['type'] == 'arbitrage')
         value_edge_count = sum(1 for o in opportunities if o['type'] == 'value_edge')
