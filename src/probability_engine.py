@@ -297,12 +297,16 @@ class ProbabilityEngine:
             if total_prob_team1 < total_prob_team2:
                 total_prob = total_prob_team1
                 arb_team = team1
+                pm_team = team1  # Bet on team1 on Polymarket
+                cb_team = team2  # Bet on team2 on Cloudbet (opposite)
                 pm_odds = self._probability_to_odds(pm_prob_team1)
                 cb_odds = self._probability_to_odds(cb_prob_team2)
                 pm_outcome_name = "YES" if pm_prob_team1 == max(pm_prob_team1, pm_prob_team2) else "NO"
             else:
                 total_prob = total_prob_team2
                 arb_team = team2
+                pm_team = team2  # Bet on team2 on Polymarket
+                cb_team = team1  # Bet on team1 on Cloudbet (opposite)
                 pm_odds = self._probability_to_odds(pm_prob_team2)
                 cb_odds = self._probability_to_odds(cb_prob_team1)
                 pm_outcome_name = "NO" if pm_prob_team1 == max(pm_prob_team1, pm_prob_team2) else "YES"
@@ -325,12 +329,17 @@ class ProbabilityEngine:
                         'cb_probability': cb_prob_team2 if arb_team == team1 else cb_prob_team1,
                         'pm_odds': pm_odds,
                         'cb_odds': cb_odds,
+                        'odds_a': pm_odds,  # For bet sizing calculator (Polymarket)
+                        'odds_b': cb_odds,  # For bet sizing calculator (Cloudbet - opposite)
                         'total_probability': total_prob,
                         'profit_percentage': profit_pct,
                         'market_a': match['market_a'],
                         'market_b': match['market_b'],
                         'sport_key': match.get('sport', 'unknown'),
-                        'start_time': match.get('cb_time')
+                        'start_time': match.get('cb_time'),
+                        # Add team names for each platform (opposite outcomes for arbitrage)
+                        'outcome_a': {'name': pm_team, 'odds': pm_odds},  # Polymarket team
+                        'outcome_b': {'name': cb_team, 'odds': cb_odds}   # Cloudbet team (opposite)
                     }
                     
                     opportunities.append(opportunity)

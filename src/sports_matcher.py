@@ -428,7 +428,17 @@ class SportEventMatcher:
         Group Cloudbet outcomes by unique event.
 
         Returns:
-            Dict keyed by event_name with aggregated outcome data
+            Dict keyed by event_name with aggregated outcome data.
+            
+        Important:
+            - We strongly prefer the *main moneyline* market for each event.
+            - Cloudbet exposes many markets per event (spreads, totals,
+              alternative lines, etc.) that reuse the same team names with
+              different odds.
+            - If we naively aggregate all of them, whichever market is processed
+              last will "win", which can produce odds that don't actually exist
+              in the primary moneyline market (as seen in Telegram screenshots
+              like 2.39 when Cloudbet only shows 3.10).
         """
         events = {}
 
@@ -438,7 +448,11 @@ class SportEventMatcher:
             if event_name not in events:
                 events[event_name] = {
                     'event_name': event_name,
+                    # Primary outcome mapping we want to use downstream
                     'outcomes': {},
+                    # Backup of *all* outcomes so we can gracefully fall back
+                    # if an event has no recognised moneyline market.
+                    '_all_outcomes': {},
                     'url': outcome.get('url', ''),
                     'start_time': outcome.get('start_time'),
                     'sport_key': outcome.get('sport_key'),
@@ -447,9 +461,34 @@ class SportEventMatcher:
 
             outcome_name = outcome.get('outcome', '')
             odds = outcome.get('odds', 0.0)
+            market_type = (outcome.get('market_type') or '').lower()
 
             if outcome_name and odds > 0:
-                events[event_name]['outcomes'][outcome_name] = odds
+                # Always track in the backup map
+                events[event_name]['_all_outcomes'][outcome_name] = odds
+
+                # Prefer only the main moneyline-style markets for our primary
+                # mapping. Cloudbet uses keys like "moneyline" / "Moneyline"
+                # and sometimes "match-winner" for the main game winner market.
+                is_primary_moneyline = market_type in {
+                    'moneyline',
+                    'match-winner',
+                    'match_winner',
+                    'ml',
+                }
+
+                if is_primary_moneyline:
+                    events[event_name]['outcomes'][outcome_name] = odds
+
+        # Post-process: if we didn't find any recognised moneyline market for
+        # an event, fall back to *all* outcomes so we don't silently drop the
+        # event entirely. This still improves correctness for most NBA/NFL
+        # events while remaining backwards compatible.
+        for data in events.values():
+            if not data['outcomes'] and data['_all_outcomes']:
+                data['outcomes'] = data['_all_outcomes']
+            # Remove the internal backup key before returning
+            data.pop('_all_outcomes', None)
 
         return events
     

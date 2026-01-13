@@ -78,11 +78,26 @@ class TelegramNotifier:
         platform_b = opportunity.get('platform_b', 'Platform B')
         
         # Get outcome names for display
-        outcome_a = opportunity.get('outcome_a', {}).get('name', 'YES')
-        outcome_b = opportunity.get('outcome_b', {}).get('name', 'NO')
+        # For arbitrage, outcome_a and outcome_b should be different teams (opposite outcomes)
+        outcome_a_dict = opportunity.get('outcome_a', {})
+        outcome_b_dict = opportunity.get('outcome_b', {})
         
-        odds_a = opportunity.get('odds_a', 0)
-        odds_b = opportunity.get('odds_b', 0)
+        # Try to get team names from outcome dictionaries, fallback to odds keys
+        if isinstance(outcome_a_dict, dict) and 'name' in outcome_a_dict:
+            outcome_a = outcome_a_dict.get('name', 'YES')
+            odds_a = outcome_a_dict.get('odds', opportunity.get('pm_odds', opportunity.get('odds_a', 0)))
+        else:
+            outcome_a = opportunity.get('team', 'YES')  # Fallback to team name
+            odds_a = opportunity.get('pm_odds', opportunity.get('odds_a', 0))
+        
+        if isinstance(outcome_b_dict, dict) and 'name' in outcome_b_dict:
+            outcome_b = outcome_b_dict.get('name', 'NO')
+            odds_b = outcome_b_dict.get('odds', opportunity.get('cb_odds', opportunity.get('odds_b', 0)))
+        else:
+            # For arbitrage, outcome_b should be the opposite team
+            # Fallback: try to get from opportunity data
+            outcome_b = 'NO'
+            odds_b = opportunity.get('cb_odds', opportunity.get('odds_b', 0))
         
         bet_amount_a = opportunity.get('bet_amount_a', 0)
         bet_amount_b = opportunity.get('bet_amount_b', 0)
@@ -109,16 +124,14 @@ class TelegramNotifier:
 *Market:* {market_name}
 
 *{platform_a_display}:*
-{outcome_a} @ {odds_a:.2f}
-Stake: ${bet_amount_a:.2f}
+{outcome_a} @ {odds_a:.2f} - ${bet_amount_a:.2f}
 {url_a}
 
-*{platform_b_display}:* (OPPOSITE)
-{outcome_b} @ {odds_b:.2f}
-Stake: ${bet_amount_b:.2f}
+*{platform_b_display}:*
+{outcome_b} @ {odds_b:.2f} - ${bet_amount_b:.2f}
 {url_b}
 
-*Total Stake:* ${total_capital:.2f}
+*Total Invested:* ${total_capital:.2f}
 *Guaranteed Profit:* ${guaranteed_profit:.2f}"""
         
         else:
