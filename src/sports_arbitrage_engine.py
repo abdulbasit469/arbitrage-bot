@@ -93,10 +93,29 @@ class SportsArbitrageEngine:
             if opp['type'] == 'arbitrage':
                 # For arbitrage, we need to determine the OPPOSITE outcome for Cloudbet
                 team = opp['team']
-                cb_teams = opp.get('cb_teams') or ('Team1', 'Team2')
+                cb_teams = opp.get('cb_teams')
                 
-                # Determine opposite team for Cloudbet
-                opposite_team = cb_teams[1] if cb_teams and cb_teams[0] == team else cb_teams[0] if cb_teams else "Team2"
+                # Use outcome_b if already set (from probability_engine), otherwise calculate
+                existing_outcome_b = opp.get('outcome_b', {})
+                if isinstance(existing_outcome_b, dict) and 'name' in existing_outcome_b:
+                    # Already has team name from probability_engine
+                    opposite_team = existing_outcome_b.get('name')
+                elif cb_teams and isinstance(cb_teams, (tuple, list)) and len(cb_teams) >= 2:
+                    # Calculate opposite team from cb_teams tuple
+                    if cb_teams[0] == team:
+                        opposite_team = cb_teams[1]
+                    elif cb_teams[1] == team:
+                        opposite_team = cb_teams[0]
+                    else:
+                        # Team doesn't match either, use the one that's not arb_team
+                        opposite_team = cb_teams[1] if cb_teams[0] == team else cb_teams[0]
+                else:
+                    # Fallback: try to get from market_b or use generic
+                    opposite_team = "Opposite Team"
+                    self.logger.warning(
+                        f"Could not determine opposite team for {opp['market_name']}. "
+                        f"cb_teams={cb_teams}, team={team}"
+                    )
                 
                 # Format for arbitrage opportunities
                 formatted = {
@@ -106,13 +125,13 @@ class SportsArbitrageEngine:
                     'platform_b': opp['platform_b'],
                     'market_a': opp['market_a'],
                     'market_b': opp['market_b'],
-                    'cb_teams': cb_teams,
+                    'cb_teams': cb_teams or (),
                     'outcome_a': {
-                        'name': f"{team} {opp['pm_outcome']}",  # e.g., "Steelers YES"
+                        'name': opp.get('outcome_a', {}).get('name', f"{team} {opp.get('pm_outcome', 'YES')}"),
                         'odds': opp['pm_odds']
                     },
                     'outcome_b': {
-                        'name': f"{opposite_team}",  # Opposite team
+                        'name': opposite_team,  # Use calculated/extracted opposite team
                         'odds': opp['cb_odds']
                     },
                     'odds_a': opp['pm_odds'],
