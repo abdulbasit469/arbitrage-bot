@@ -93,11 +93,10 @@ class SportsArbitrageEngine:
             if opp['type'] == 'arbitrage':
                 # For arbitrage, we need to determine the OPPOSITE outcome for Cloudbet
                 team = opp['team']
-                cb_teams = (opp['market_b'].get('teams', ['Team1', 'Team2'])[0], 
-                           opp['market_b'].get('teams', ['Team1', 'Team2'])[1]) if 'teams' in opp['market_b'] else ('Team1', 'Team2')
+                cb_teams = opp.get('cb_teams') or ('Team1', 'Team2')
                 
                 # Determine opposite team for Cloudbet
-                opposite_team = cb_teams[1] if cb_teams[0] == team else cb_teams[0]
+                opposite_team = cb_teams[1] if cb_teams and cb_teams[0] == team else cb_teams[0] if cb_teams else "Team2"
                 
                 # Format for arbitrage opportunities
                 formatted = {
@@ -107,6 +106,7 @@ class SportsArbitrageEngine:
                     'platform_b': opp['platform_b'],
                     'market_a': opp['market_a'],
                     'market_b': opp['market_b'],
+                    'cb_teams': cb_teams,
                     'outcome_a': {
                         'name': f"{team} {opp['pm_outcome']}",  # e.g., "Steelers YES"
                         'odds': opp['pm_odds']
@@ -130,6 +130,7 @@ class SportsArbitrageEngine:
                 
                 # Determine which team from cb_teams matches for value edge
                 team_for_value = opp['team']  # This is the team with the value edge
+                cb_teams = opp.get('cb_teams') or None
                 
                 formatted = {
                     'market_name': opp['market_name'],
@@ -138,6 +139,7 @@ class SportsArbitrageEngine:
                     'platform_b': opp['platform_b'],
                     'market_a': opp['market_a'],
                     'market_b': opp['market_b'],
+                    'cb_teams': cb_teams,
                     'outcome_a': {
                         'name': team_for_value,  # Same team on both platforms
                         'odds': opp['pm_odds']
