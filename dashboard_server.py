@@ -4,8 +4,9 @@ Simple dashboard server for Railway.
 import os
 from pathlib import Path
 
-# Ensure data directory exists
+# Ensure necessary directories exist
 Path("data").mkdir(exist_ok=True)
+Path("logs").mkdir(exist_ok=True)
 
 # Import dashboard
 from src.dashboard.app import DashboardApp
