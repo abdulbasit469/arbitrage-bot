@@ -19,18 +19,29 @@ bot_instance = None
 @asynccontextmanager
 async def lifespan(app):
     # STARTUP: Launch the bot in the background
-    print("🚀 Starting Arbitrage Bot + Dashboard...")
+    print("🚀 Web Server starting...")
     global bot_instance
     try:
         # Initialize Bot
         bot_instance = ArbitrageBot()
         
+        # Wrapper to delay bot startup
+        async def delayed_bot_start():
+            print("⏳ Waiting 10s for Web Server to bind port...")
+            await asyncio.sleep(10)
+            print("🚀 Starting Arbitrage Bot cycle...")
+            try:
+                await bot_instance.run()
+            except Exception as e:
+                print(f"❌ Bot crashed: {e}")
+                import traceback
+                traceback.print_exc()
+
         # Run Bot in background task
-        # We use create_task to run it concurrently with the web server
-        asyncio.create_task(bot_instance.run())
-        print("✅ Bot background task started!")
+        asyncio.create_task(delayed_bot_start())
+        print("✅ Bot background task scheduled (starts in 10s)!")
     except Exception as e:
-        print(f"❌ Failed to start bot: {e}")
+        print(f"❌ Failed to initialize bot: {e}")
         import traceback
         traceback.print_exc()
     
