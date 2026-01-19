@@ -76,7 +76,7 @@ class DashboardApp:
             """View recent logs and errors."""
             # Read recent log entries (last 100 lines)
             # Use absolute path relative to bot root
-            bot_root = Path(__file__).parent.parent.parent.parent
+            bot_root = Path(__file__).parent.parent.parent
             log_file = bot_root / "logs" / "arbitrage_bot.log"
             log_entries = []
             

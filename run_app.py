@@ -58,6 +58,11 @@ app = dashboard.get_app()
 # Attach lifespan manager to the app
 app.router.lifespan_context = lifespan
 
+# Add Health Check for Railway/Docker
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "bot_running": bot_instance is not None}
+
 if __name__ == "__main__":
     # Run server
     uvicorn.run(app, host="0.0.0.0", port=port)
