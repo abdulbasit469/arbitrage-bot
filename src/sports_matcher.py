@@ -470,14 +470,48 @@ class SportEventMatcher:
                 # STRICT: Only accept exact moneyline markets
                 # Cloudbet's "game lines" is too broad (includes spreads, totals, moneyline)
                 # We ONLY want the moneyline market, not spreads or totals
-                # Accept: "moneyline", "ml", "match-winner", "match_winner"
-                # Reject: "game lines", "spread", "total", "handicap", etc.
-                is_primary_moneyline = market_type in {
-                    'moneyline',
-                    'ml',
-                    'match-winner',
-                    'match_winner',
-                }
+                # 
+                # Cloudbet uses format: "sport.market_type" (e.g., "basketball.moneyline")
+                # Accept:
+                #   - basketball.moneyline, soccer.match_odds, american_football.moneyline
+                #   - tennis.winner, mma.winner, boxing.winner
+                #   - Generic: moneyline, ml, match-winner, match_winner
+                # Reject: game lines, spread, total, handicap, etc.
+                
+                # Normalize market type for comparison
+                market_type_lower = market_type.lower()
+                
+                # Check if it's a moneyline/winner market
+                is_primary_moneyline = (
+                    # Direct moneyline markets
+                    'moneyline' in market_type_lower or
+                    market_type_lower == 'ml' or
+                    'match-winner' in market_type_lower or
+                    'match_winner' in market_type_lower or
+                    # Soccer uses "match_odds" for moneyline
+                    'match_odds' in market_type_lower or
+                    # Tennis/MMA/Boxing use "winner"
+                    (market_type_lower.endswith('.winner') or market_type_lower == 'winner') or
+                    # 1x2 markets (Home/Draw/Away) - valid for soccer
+                    (market_type_lower.endswith('.1x2') and 'period' not in market_type_lower and 'half' not in market_type_lower)
+                )
+                
+                # Explicitly reject non-moneyline markets even if they contain "winner"
+                is_rejected = (
+                    'game_lines' in market_type_lower or
+                    'handicap' in market_type_lower or
+                    'spread' in market_type_lower or
+                    'total' in market_type_lower or
+                    'over' in market_type_lower or
+                    'under' in market_type_lower or
+                    'period' in market_type_lower or  # Exclude period-specific markets
+                    'half' in market_type_lower or    # Exclude half-specific markets
+                    'quarter' in market_type_lower or # Exclude quarter-specific markets
+                    'outright' in market_type_lower   # Exclude futures/outrights
+                )
+                
+                is_primary_moneyline = is_primary_moneyline and not is_rejected
+
 
                 if is_primary_moneyline:
                     # Only store if we don't already have this outcome, or if this is a better match
