@@ -51,6 +51,11 @@ class AutobetEngine:
         if profit_pct < self.cfg.min_profit_threshold:
             return False
 
+        # STRICTLY Arbitrage Only (Both bets) as requested
+        if opportunity.get('type') != 'arbitrage':
+            # self.logger.debug("Skipping non-arbitrage opportunity (Value Edge)") 
+            return False
+
         if self.cfg.max_bets_per_day and self._bets_today >= self.cfg.max_bets_per_day:
             self.logger.info(
                 f"Autobet skipped - reached max bets per day ({self.cfg.max_bets_per_day})"
