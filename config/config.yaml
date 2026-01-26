@@ -3,7 +3,7 @@
 
 # Bankroll and Betting Configuration
 bankroll:
-  amount: 60.0  # Total capital in USD (Testing with $30 + $30)
+  amount: 2000.0  # Total capital in USD
   kelly_fraction: 0.5  # Kelly multiplier: 1.0 = full Kelly, 0.5 = half Kelly, 0.25 = quarter Kelly
 
 # Arbitrage Detection Settings
@@ -59,9 +59,9 @@ database:
 # Autobet Configuration (REAL EXECUTION)
 autobet:
   enabled: true
-  min_profit_threshold: 0.5  # TEMPORARY: Lowered for testing to 0.5%
+  min_profit_threshold: 10.0  # ONLY take opportunities above 10% profit
   max_bets_per_day: 50
-  max_stake_fraction: 0.2     # Risk 20% of bankroll per arb (approx $12)
+  max_stake_fraction: 0.1     # Risk 10% of bankroll per arb
   daily_loss_limit: 100.0
   real_execution: true        # DANGER: Set to true to place real bets
 
