@@ -126,6 +126,8 @@ class AutobetEngine:
             if not execution_started:
                 self.logger.error("Real execution failed to start. Not marking as 'Bet Taken' on dashboard.")
                 return 
+        else:
+            self.logger.info("Real execution DISABLED in config. Skipping real money placement.")
 
         # Record in DB (Only if real execution started or if real_execution is disabled)
         self.db.mark_bet_placed(
@@ -143,8 +145,6 @@ class AutobetEngine:
             f"{opportunity.get('platform_a')}/{opportunity.get('platform_b')} | "
             f"Stake=${total_capital:.2f} | PnL=${guaranteed_profit:.2f}"
         )
-        else:
-            self.logger.info("Real execution DISABLED in config. Skipping bet placement.")
 
     async def _execute_real_bets(self, opportunity: Dict):
         """Execute real bets on both platforms."""
