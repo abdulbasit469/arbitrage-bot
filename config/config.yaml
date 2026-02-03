@@ -64,4 +64,5 @@ autobet:
   max_stake_fraction: 0.1     # Risk 10% of bankroll per arb
   daily_loss_limit: 100.0
   real_execution: true        # DANGER: Set to true to place real bets
+  currency: "USDC"            # Default currency for betting (e.g., USDT, USDC)
 

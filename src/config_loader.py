@@ -72,6 +72,8 @@ class AutobetConfig(BaseModel):
     daily_loss_limit: float = Field(default=0.0, ge=0)
     # Flag to enable real money betting (dangerous!)
     real_execution: bool = Field(default=False)
+    # Currency to use for real betting (e.g. USDT, USDC)
+    currency: str = Field(default="USDT")
 
 
 class LoggingConfig(BaseModel):

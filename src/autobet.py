@@ -205,22 +205,23 @@ class AutobetEngine:
                 self.logger.error(f"Missing Cloudbet selection_id for outcome '{outcome_b_name}'. Cannot execute.")
                 return False
 
-            return True # Successfully started execution logic
-
             # Execution logic: Sequence matters. 
             # Usually Cloudbet (sportsbook) is more sensitive to odds movement.
             # But Polymarket (exchange) can have liquidity issues.
             
-            # 1. Place bet on Platform B (Cloudbet as per current matcher flow)
+            # 1. Place bet on Platform B (Cloudbet)
             success_b = False
             if selection_id_b:
-                resp_b = await self.cb_executor.place_bet(selection_id_b, odds_b, stake_b)
+                # Use the configured currency
+                currency = getattr(self.cfg, 'currency', 'USDT')
+                self.logger.info(f"Placing bet on Cloudbet using currency: {currency}")
+                resp_b = await self.cb_executor.place_bet(selection_id_b, odds_b, stake_b, currency=currency)
                 if resp_b:
                     success_b = True
                     self.logger.info("Successfully placed bet on Cloudbet")
                 else:
                     self.logger.error("Failed to place bet on Cloudbet. ABORTING hedge.")
-                    return # ABORT to avoid unhedged position
+                    return False # ABORT to avoid unhedged position
             
             # 2. Place bet on Platform A (Polymarket)
             if success_b and token_id_a:
@@ -229,10 +230,15 @@ class AutobetEngine:
                 resp_a = await self.pm_executor.place_order(token_id_a, price_a, "BUY", stake_a)
                 if resp_a:
                     self.logger.info("Successfully placed hedge order on Polymarket")
+                    return True
                 else:
                     self.logger.critical(f"FAILED TO HEDGE on Polymarket! You have an unhedged bet on Cloudbet for ${stake_b}")
+                    return True # Still return True because Cloudbet bet was placed
+            
+            return False
             
         except Exception as e:
             self.logger.error(f"Error in real execution: {e}", exc_info=True)
+            return False
 
 
